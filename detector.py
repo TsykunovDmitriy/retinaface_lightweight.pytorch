@@ -80,39 +80,72 @@ class RetinaDetector:
 if __name__ == "__main__":
     from utils import video_utils
     from tqdm import tqdm
-    from filters.kalman import KalmanFilter
+    from filters.kernel_filters import median
 
     detector = RetinaDetector()
-    kalmans = [KalmanFilter(input_dim=2, cov_process=0.1, cov_measure=3) for i in range(5)]
     
     video, audio_path, fps = video_utils.vidread("./test_video.mp4")
-    output = []
-    for frame in tqdm(video):
+    landmarks = []
+    boxes = []
+    scores = []
+    idx_not_empty = []
+    for i, frame in tqdm(enumerate(video)):
         dets = detector(frame)
+        if len(dets):
+            idx_not_empty.append(i)
+            boxes.append(dets[0][:4])
+            scores.append(dets[0][4])
+            landmarks.append(dets[0][5:].reshape(5, 2))
+        # if i == 100:
+        #     break
 
-        for b in dets:
-            text = "{:.4f}".format(b[4])
-            cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), (0, 0, 255), 2)
-            cx = b[0]
-            cy = b[1] + 12
+    land = median(np.array(landmarks), m=5).astype(np.int)
+    boxes = np.array(boxes)
+    scores = np.array(scores)
+
+
+    output = []
+    for i, frame in enumerate(video):
+        if i in idx_not_empty:
+            text = "{:.4f}".format(scores[0])
+            cv2.rectangle(frame, (int(boxes[0][0]), int(boxes[0][1])), (int(boxes[0][2]), int(boxes[0][3])), (0, 0, 255), 2)
+            cx = boxes[0][0]
+            cy = boxes[0][1] + 12
             cv2.putText(frame, text, (int(cx), int(cy)),
                         cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-
-            landmarks = b[5:].reshape(5, 2)
-            opt_landmarks = []
-            for i in range(5):
-                kalmans[i].update(landmarks[i])
-                opt_landmarks.append(kalmans[i].get_results())
-
-            land = opt_landmarks
-            # landms
-            cv2.circle(frame, (land[0][0], land[0][1]), 1, (0, 0, 255), 4)
-            cv2.circle(frame, (land[1][0], land[1][1]), 1, (0, 255, 255), 4)
-            cv2.circle(frame, (land[2][0], land[2][1]), 1, (255, 0, 255), 4)
-            cv2.circle(frame, (land[3][0], land[3][1]), 1, (0, 255, 0), 4)
-            cv2.circle(frame, (land[4][0], land[4][1]), 1, (255, 0, 0), 4)
-        
+            cv2.circle(frame, (land[0][0][0], land[0][0][1]), 1, (0, 0, 255), 4)
+            cv2.circle(frame, (land[0][1][0], land[0][1][1]), 1, (0, 255, 255), 4)
+            cv2.circle(frame, (land[0][2][0], land[0][2][1]), 1, (255, 0, 255), 4)
+            cv2.circle(frame, (land[0][3][0], land[0][3][1]), 1, (0, 255, 0), 4)
+            cv2.circle(frame, (land[0][4][0], land[0][4][1]), 1, (255, 0, 0), 4)
+            land = np.delete(land, 0, 0)
+            boxes = np.delete(boxes, 0, 0)
+            scores = np.delete(scores, 0, 0)
         output.append(frame[..., ::-1])
+
+    #     for b in dets:
+    #         text = "{:.4f}".format(b[4])
+    #         cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), (0, 0, 255), 2)
+    #         cx = b[0]
+    #         cy = b[1] + 12
+    #         cv2.putText(frame, text, (int(cx), int(cy)),
+    #                     cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
+
+    #         landmarks = b[5:].reshape(5, 2)
+    #         opt_landmarks = []
+    #         for i in range(5):
+    #             kalmans[i].update(landmarks[i])
+    #             opt_landmarks.append(kalmans[i].get_results())
+
+    #         land = opt_landmarks
+    #         # landms
+    #         cv2.circle(frame, (land[0][0], land[0][1]), 1, (0, 0, 255), 4)
+    #         cv2.circle(frame, (land[1][0], land[1][1]), 1, (0, 255, 255), 4)
+    #         cv2.circle(frame, (land[2][0], land[2][1]), 1, (255, 0, 255), 4)
+    #         cv2.circle(frame, (land[3][0], land[3][1]), 1, (0, 255, 0), 4)
+    #         cv2.circle(frame, (land[4][0], land[4][1]), 1, (255, 0, 0), 4)
+        
+    #     output.append(frame[..., ::-1])
 
     out_video = video_utils.vidwrite(output, audio_path, fps)
     video_utils.write_bytesio_to_file("./test_video_out.mp4", out_video)
