@@ -80,10 +80,8 @@ class RetinaDetector:
 if __name__ == "__main__":
     from utils import video_utils
     from tqdm import tqdm
-    from filters.kalman import KalmanFilter
 
     detector = RetinaDetector()
-    kalmans = [KalmanFilter(input_dim=2, cov_process=0.1, cov_measure=3) for i in range(5)]
     
     video, audio_path, fps = video_utils.vidread("./test_video.mp4")
     output = []
@@ -98,13 +96,7 @@ if __name__ == "__main__":
             cv2.putText(frame, text, (int(cx), int(cy)),
                         cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
-            landmarks = b[5:].reshape(5, 2)
-            opt_landmarks = []
-            for i in range(5):
-                kalmans[i].update(landmarks[i])
-                opt_landmarks.append(kalmans[i].get_results())
-
-            land = opt_landmarks
+            land = b[5:].reshape(5, 2)
             # landms
             cv2.circle(frame, (land[0][0], land[0][1]), 1, (0, 0, 255), 4)
             cv2.circle(frame, (land[1][0], land[1][1]), 1, (0, 255, 255), 4)
