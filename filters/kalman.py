@@ -127,4 +127,4 @@ class KalmanFilter:
         if(self.state_num==2):
             return self.state[0]
         if(self.state_num==4):
-            return [self.state[0], self.state[1]]
+            return [self.state[0][0], self.state[1][0]]
