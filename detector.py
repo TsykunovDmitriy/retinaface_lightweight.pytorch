@@ -1,15 +1,18 @@
+import os
 import cv2
 import torch
 
-from utils.inference import *
-from models.retinaface import RetinaFace, PriorBox
-from models.config import cfg_mnet as cfg
+from .utils.inference import *
+from .models.retinaface import RetinaFace, PriorBox
+from .models.config import cfg_mnet as cfg
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 class RetinaDetector:
     def __init__(
                 self, 
                 device="cpu", 
-                weights="./weights/mobilenet0.25_Final.pth", 
+                weights=f"{current_dir}/weights/mobilenet0.25_Final.pth", 
                 score_thresh=0.5, 
                 top_k=100,
                 nms_thresh=0.4,

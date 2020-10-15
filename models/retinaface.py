@@ -1,3 +1,4 @@
+import os
 import math
 import torch
 import torch.nn as nn
@@ -11,6 +12,8 @@ from .net import FPN as FPN
 from .net import SSH as SSH
 
 from .config import cfg_mnet, cfg_re50
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 class ClassHead(nn.Module):
     def __init__(self,inchannels=512,num_anchors=3):
@@ -56,7 +59,7 @@ class RetinaFace(nn.Module):
         if cfg['name'] == 'mobilenet0.25':
             backbone = MobileNetV1()
             if cfg['pretrain']:
-                checkpoint = torch.load("./weights/mobilenetV1X0.25_pretrain.tar", map_location=torch.device('cpu'))
+                checkpoint = torch.load(f"{current_dir}/../weights/mobilenetV1X0.25_pretrain.tar", map_location=torch.device('cpu'))
                 from collections import OrderedDict
                 new_state_dict = OrderedDict()
                 for k, v in checkpoint['state_dict'].items():
