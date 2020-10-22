@@ -3,6 +3,7 @@ import cv2
 import torch
 
 from .utils.inference import *
+from .utils.align import warp_and_crop_face
 from .models.retinaface import RetinaFace, PriorBox
 from .models.config import cfg_mnet as cfg
 
@@ -34,6 +35,10 @@ class RetinaDetector:
         self.score_thresh = score_thresh
         self.top_k = top_k
         self.nms_thresh = nms_thresh
+
+    @staticmethod
+    def aligning(img, lands, crop_size=(512, 512)):
+        return warp_and_crop_face(img, lands, crop_size=crop_size)
 
     def __call__(self, image):
         image_ = pad(image)
@@ -88,7 +93,7 @@ if __name__ == "__main__":
 
     detector = RetinaDetector()
     
-    video, audio_path, fps = video_utils.vidread("./test_video.mp4")
+    video, media_container = video_utils.vidread("./test_video.mp4")
     output = []
     for frame in tqdm(video):
         boxes, landms, scores = detector(frame)
@@ -110,7 +115,7 @@ if __name__ == "__main__":
         
         output.append(frame[..., ::-1])
 
-    out_video = video_utils.vidwrite(output, audio_path, fps)
+    out_video = video_utils.vidwrite(output, media_container)
     video_utils.write_bytesio_to_file("./test_video_out.mp4", out_video)
     
 
