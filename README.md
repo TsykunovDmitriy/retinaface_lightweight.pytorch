@@ -4,9 +4,8 @@ This repository contains script for inference RetinaFace with MobileNet encoder.
 
 ### Installation
 
-Clone this repository
 ```
-pip3 install .
+pip install git+https://github.com/TsykunovDmitriy/retinaface_lightweight.pytorch
 ```
 Make sure your CUDA version matches the latest PyTorch version. Otherwise, install the required version of PyTorch from [here](https://pytorch.org).
 
