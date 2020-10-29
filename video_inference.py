@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from tqdm import tqdm
 
 from retinaface import RetinaDetector
@@ -10,13 +11,15 @@ video = video_utils.vidread("./test_video.mp4")
 output = []
 for frame in tqdm(video):
     boxes, landms, scores = detector(frame)
+    boxes = boxes.astype(np.int)
+    landms = landms.astype(np.int)
 
     for i in range(len(boxes)):
         text = "{:.4f}".format(scores[i])
-        cv2.rectangle(frame, (int(boxes[i][0]), int(boxes[i][1])), (int(boxes[i][2]), int(boxes[i][3])), (0, 0, 255), 2)
+        cv2.rectangle(frame, (boxes[i][0], boxes[i][1]), (boxes[i][2], boxes[i][3]), (0, 0, 255), 2)
         cx = boxes[i][0]
         cy = boxes[i][1] + 12
-        cv2.putText(frame, text, (int(cx), int(cy)),
+        cv2.putText(frame, text, (cx, cy),
                     cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
         # landms

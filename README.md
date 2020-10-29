@@ -45,3 +45,7 @@ Align
 ```python
 >>> aligned_face, trm, trm_inv = detector.aligning(image, landmarks[person])
 ```
+
+### Example
+
+<p align="center"><img src="assets/nba_out.jpg" width="960"\></p>
