@@ -2,10 +2,11 @@
 
 This repository contains script for inference RetinaFace with MobileNet encoder. The remake of the https://github.com/biubug6/Pytorch_Retinaface
 
-### Install requirements
+### Installation
 
+Clone this repository
 ```
-pip3 install -r requirements.txt
+pip3 install .
 ```
 Make sure your CUDA version matches the latest PyTorch version. Otherwise, install the required version of PyTorch from [here](https://pytorch.org).
 
