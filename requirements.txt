@@ -1,5 +1,5 @@
 numpy
-opencv-python==4.3.0.36
+opencv-python
 Pillow
 torch
 torchvision
