@@ -1,3 +1,3 @@
 __version__ = 0.1
 
-from .detector import RetinaDetector
+from retinaface.detector import RetinaDetector

@@ -2,10 +2,10 @@ import os
 import cv2
 import torch
 
-from .utils.inference import *
-from .utils.align import warp_and_crop_face
-from .models.retinaface import RetinaFace, PriorBox
-from .models.config import cfg_mnet as cfg
+from retinaface.utils.inference import *
+from retinaface.utils.align import warp_and_crop_face
+from retinaface.models.retinaface import RetinaFace, PriorBox
+from retinaface.models.config import cfg_mnet as cfg
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,9 +21,9 @@ class RetinaDetector:
         try:
             device = int(device)
             device = f"cuda:{device}"
+            self.device = torch.device(device) if torch.cuda.is_available() else torch.device("cpu")
         except ValueError:
-            pass
-        self.device = torch.device(device)
+            self.device = torch.device("cpu")
 
         self.detector = RetinaFace(cfg)
         load_model(self.detector, weights, self.device)
