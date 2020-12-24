@@ -7,7 +7,38 @@ from retinaface.utils.align import warp_and_crop_face
 from retinaface.models.retinaface import RetinaFace, PriorBox
 from retinaface.models.config import cfg_mnet as cfg
 
+try:
+    from torch2trt import TRTModule
+    available_trt = True
+except:
+    available_trt = False
+
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+def create_engine(weights, device, eps=1e-3):
+    print("Create trt engine for retintaface...")
+    from torch2trt import torch2trt
+    model = RetinaFace(cfg).to(device)
+    load_model(model, weights, device)
+    model.eval()
+    x = torch.ones((1, 3, cfg["image_size"], cfg["image_size"])).to(device)
+    model_trt = torch2trt(model, [x])
+    print("Ok. Check outputs...")
+
+    y = model(x)
+    y_trt = model_trt(x)
+
+    for out, out_trt in zip(y, y_trt):
+        if torch.max(torch.abs(out - out_trt)) > eps:
+            raise RuntimeError
+    
+    os.makedirs(os.path.join(current_dir, "engines"), exist_ok=True)
+    torch.save(model_trt.state_dict(), os.path.join(current_dir, "engines", f"retina_trt_{device.index}.pth"))
+    
+    return  model_trt
+
 
 class RetinaDetector:
     def __init__(
@@ -17,18 +48,31 @@ class RetinaDetector:
                 score_thresh=0.5, 
                 top_k=100,
                 nms_thresh=0.4,
+                use_trt=False,
             ):
         try:
             device = int(device)
-            device = f"cuda:{device}"
-            self.device = torch.device(device) if torch.cuda.is_available() else torch.device("cpu")
+            cuda_device = f"cuda:{device}"
+            self.device = torch.device(cuda_device) if torch.cuda.is_available() else torch.device("cpu")
         except ValueError:
             self.device = torch.device("cpu")
 
-        self.detector = RetinaFace(cfg)
-        load_model(self.detector, weights, self.device)
-        self.detector.eval()
-        self.detector.to(self.device)
+        if use_trt and available_trt and (device != "cpu"):
+            if os.path.exists(os.path.join(current_dir, "engines", f"retina_trt_{device}.pth")):
+                print("Load TRT engine...")
+                self.detector = TRTModule()
+                self.detector.load_state_dict(torch.load(os.path.join(current_dir, "engines", f"retina_trt_{device}.pth")))
+            else:
+                try:
+                    self.detector = create_engine(weights, self.device)
+                except Exception as e:
+                    print("ERROR: Cannot create engine for retinaface.")
+                    print(e)   
+        else:
+            self.detector = RetinaFace(cfg)
+            load_model(self.detector, weights, self.device)
+            self.detector.eval()
+            self.detector.to(self.device)
         
         self.priorbox = PriorBox(cfg).forward().to(self.device)
 
@@ -86,24 +130,4 @@ class RetinaDetector:
         landms = landms.reshape(-1, 5, 2)
 
         return boxes, landms, scores
-    
-
-
-
-
-
-
-
-
-
-
-
         
-
-        
-
-        
-
-
-
-

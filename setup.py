@@ -7,7 +7,7 @@ with open("requirements.txt", "r") as f:
 
 setup(
     name="retinaface",
-    version="0.1",
+    version="0.2",
     packages=find_packages(),
     url="",
     license="MIT",
