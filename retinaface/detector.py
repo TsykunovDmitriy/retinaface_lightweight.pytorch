@@ -2,10 +2,10 @@ import os
 import cv2
 import torch
 
-from retinaface.utils.inference import *
-from retinaface.utils.align import warp_and_crop_face
+from retinaface.utils.utils import *
+from retinaface.aligners import insightface_align
+from retinaface.models.config import cfg_mnet, cfg_re50
 from retinaface.models.retinaface import RetinaFace, PriorBox
-from retinaface.models.config import cfg_mnet as cfg
 
 try:
     from torch2trt import TRTModule
@@ -17,7 +17,7 @@ except:
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def create_engine(weights, device, eps=1e-3):
+def create_engine(weights, device, cfg, eps=1e-3):
     print("Create trt engine for retintaface...")
     from torch2trt import torch2trt
     model = RetinaFace(cfg).to(device)
@@ -42,21 +42,27 @@ def create_engine(weights, device, eps=1e-3):
 
 class RetinaDetector:
     def __init__(
-                self, 
-                device="cpu", 
-                weights=f"{current_dir}/weights/mobilenet0.25_Final.pth", 
-                score_thresh=0.5, 
-                top_k=100,
-                nms_thresh=0.4,
-                use_trt=False,
-            ):
+            self, 
+            device="cpu", 
+            weights=f"{current_dir}/weights/mobilenet0.25_Final.pth", 
+            score_thresh=0.5, 
+            top_k=100,
+            nms_thresh=0.4,
+            backbone="mobilenet",
+            use_trt=False,
+        ):
+        assert (device in ["cpu", "cuda"]) or ("cuda" in device)
         try:
             device = int(device)
-            cuda_device = f"cuda:{device}"
-            self.device = torch.device(cuda_device) if torch.cuda.is_available() else torch.device("cpu")
+            device = f"cuda:{device}"
         except ValueError:
+            pass
+        self.device = torch.device(device)
+        if not torch.cuda.is_available():
             self.device = torch.device("cpu")
 
+        assert backbone in ["mobilenet", "resnet50"]
+        self.cfg = cfg_mnet if backbone == "mobilenet" else cfg_re50
         if use_trt and available_trt and (device != "cpu"):
             if os.path.exists(os.path.join(current_dir, "engines", f"retina_trt_{device}.pth")):
                 print("Load TRT engine...")
@@ -68,13 +74,13 @@ class RetinaDetector:
                 except Exception as e:
                     print("ERROR: Cannot create engine for retinaface.")
                     print(e)   
-        else:
-            self.detector = RetinaFace(cfg)
+        else: 
+            self.detector = RetinaFace(self.cfg)
             load_model(self.detector, weights, self.device)
             self.detector.eval()
             self.detector.to(self.device)
         
-        self.priorbox = PriorBox(cfg).forward().to(self.device)
+        self.priorbox = PriorBox(self.cfg).forward().to(self.device)
 
         self.score_thresh = score_thresh
         self.top_k = top_k
@@ -82,11 +88,11 @@ class RetinaDetector:
 
     @staticmethod
     def aligning(img, lands, crop_size=(512, 512)):
-        return warp_and_crop_face(img, lands, crop_size=crop_size)
+        return insightface_align(img, lands, output_size=crop_size)
 
     def __call__(self, image):
         image_ = pad(image)
-        scale = cfg["image_size"] / image_.shape[0]
+        scale = self.cfg["image_size"] / image_.shape[0]
         image_ = cv2.resize(image_, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
         image_ = image_.astype(np.float32)
         image_ -= (104, 117, 123)
@@ -97,13 +103,13 @@ class RetinaDetector:
         with torch.no_grad():
             loc, conf, landms = self.detector(image_)
 
-        boxes = decode(loc.data.squeeze(0), self.priorbox, cfg['variance'])
+        boxes = decode(loc.data.squeeze(0), self.priorbox, self.cfg['variance'])
         boxes = boxes * image_.size(2) / scale
         boxes = boxes.cpu().numpy()
 
         scores = conf.squeeze(0).cpu().numpy()[:, 1]
 
-        landms = decode_landm(landms.data.squeeze(0), self.priorbox, cfg['variance'])
+        landms = decode_landm(landms.data.squeeze(0), self.priorbox, self.cfg['variance'])
         landms = landms * image_.size(2) / scale
         landms = landms.cpu().numpy()
 

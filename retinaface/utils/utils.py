@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 def check_keys(model, pretrained_state_dict):
     ckpt_keys = set(pretrained_state_dict.keys())
     model_keys = set(model.state_dict().keys())
@@ -13,11 +14,13 @@ def check_keys(model, pretrained_state_dict):
     assert len(used_pretrained_keys) > 0, 'load NONE from pretrained checkpoint'
     return True
 
+
 def remove_prefix(state_dict, prefix):
     ''' Old style model is stored with all names of parameters sharing common prefix 'module.' '''
     print('remove prefix \'{}\''.format(prefix))
     f = lambda x: x.split(prefix, 1)[-1] if x.startswith(prefix) else x
     return {f(key): value for key, value in state_dict.items()}
+
 
 def load_model(model, pretrained_path, device):
     print('Loading pretrained model from {}'.format(pretrained_path))
@@ -29,12 +32,14 @@ def load_model(model, pretrained_path, device):
     check_keys(model, pretrained_dict)
     model.load_state_dict(pretrained_dict, strict=False)
 
+
 def pad(image):
     height, width, _ = image.shape
     long_side = max(width, height)
     image_padded = np.empty((long_side, long_side, 3), dtype=image.dtype)
     image_padded[:height, :width, :] = image
     return image_padded
+
 
 # Adapted from https://github.com/Hakuyume/chainer-ssd
 def decode(loc, priors, variances):
@@ -57,6 +62,7 @@ def decode(loc, priors, variances):
     boxes[:, 2:] += boxes[:, :2]
     return boxes
 
+
 def decode_landm(pre, priors, variances):
     """Decode landm from predictions using priors to undo
     the encoding we did for offset regression at train time.
@@ -76,6 +82,7 @@ def decode_landm(pre, priors, variances):
                         priors[:, :2] + pre[:, 8:10] * variances[0] * priors[:, 2:],
                         ), dim=1)
     return landms
+
 
 def nms(dets, thresh):
     """Pure Python NMS baseline."""

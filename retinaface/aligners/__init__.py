@@ -1,0 +1,1 @@
+from .insightface import insightface_align
