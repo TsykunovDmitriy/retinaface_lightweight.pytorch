@@ -18,7 +18,7 @@ Inference
 >>> from retinaface import RetinaDetector
 
 >>> detector = RetinaDetector(
-            device="cpu", # or number of GPU (example device=0)
+            device="cpu", # or cuda or cuda:0 or number of GPU
             score_thresh=0.5, 
             top_k=100,
             nms_thresh=0.4,
@@ -45,7 +45,7 @@ Inference
 
 Align
 ```python
->>> aligned_face, trm, trm_inv = detector.aligning(image, landmarks[person])
+>>> aligned_face = detector.aligning(image, landmarks[person])
 ```
 
 Image/Video inference

@@ -87,7 +87,7 @@ class RetinaDetector:
         self.nms_thresh = nms_thresh
 
     @staticmethod
-    def aligning(img, lands, crop_size=(512, 512)):
+    def aligning(img, lands, crop_size=512):
         return insightface_align(img, lands, output_size=crop_size)
 
     def __call__(self, image):
