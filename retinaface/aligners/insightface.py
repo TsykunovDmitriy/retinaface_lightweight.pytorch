@@ -111,13 +111,13 @@ def insightface_align(image, landmarks, output_size=1024, *args, **kwargs):
     """
     # convert to np.ndarray
     if isinstance(landmarks, list):
-        lm = np.array(landmarks)
+        landmarks = np.array(landmarks)
 
     # convert to 5 points
     if landmarks.shape[0] == 68:
-        lm = convert_to_5_landmarks(lm)
+        landmarks = convert_to_5_landmarks(landmarks)
 
-    M = umeyama(lm, REFERENCE_FACIAL_POINTS * output_size, True)[:2]
+    M = umeyama(landmarks, REFERENCE_FACIAL_POINTS * output_size, True)[:2]
     return cv2.warpAffine(
         image,
         M,
